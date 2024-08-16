@@ -8,10 +8,13 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Migration
 
-to create migration file 
+to create migration file you can use makefile or 
+
 ```bash
 migrate create -seq --ext=".sql" --dir="./migrations" nametable
 ```
+
+this use golang-migrate
 
 ## MakeFile
 
