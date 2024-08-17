@@ -51,9 +51,11 @@ clean:
 	@rm -f main
 
 # Live Reload
-
 watch:
 	@air
 
-
 .PHONY: all build run test clean watch
+
+# Create migration file
+create-migrate:
+	migrate create -seq --ext=".sql" --dir="./migrations" $(name)

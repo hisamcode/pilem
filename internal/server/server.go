@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -15,15 +16,15 @@ import (
 type Server struct {
 	port int
 
-	db database.Service
+	db database.Models
 }
 
-func NewServer() *http.Server {
+func NewServer(db *sql.DB) *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	NewServer := &Server{
 		port: port,
 
-		db: database.New(),
+		db: database.NewModels(db),
 	}
 
 	// Declare Server config
