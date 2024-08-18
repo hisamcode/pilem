@@ -57,3 +57,8 @@ clean up binary from the last build
 ```bash
 make clean
 ```
+
+Create migration file
+```bash
+create-migrate name=filename
+```
