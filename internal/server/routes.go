@@ -2,10 +2,13 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"pilem/helper"
 	"pilem/internal/data"
+	"pilem/internal/database"
+	"strconv"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -68,6 +71,32 @@ func (s *Server) CreateMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = helper.WriteJSON(w, http.StatusCreated, helper.Envelope{"movie": movie}, nil)
+	if err != nil {
+		helper.ServerErrorResponse(w, r, err)
+	}
+
+}
+
+func (s *Server) GetMovieHandler(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		helper.NotFoundResponse(w, r, err)
+		return
+	}
+
+	movie, err := s.db.Movies.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, database.ErrRecordNotFound):
+			helper.NotFoundResponse(w, r, err)
+		default:
+			helper.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = helper.WriteJSON(w, http.StatusOK, helper.Envelope{"movie": movie}, nil)
 	if err != nil {
 		helper.ServerErrorResponse(w, r, err)
 	}

@@ -129,6 +129,11 @@ func ServerErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	ErrorResponse(w, r, http.StatusInternalServerError, message)
 }
 
+func NotFoundResponse(w http.ResponseWriter, r *http.Request, err error) {
+	message := "the requested resource could not be found"
+	ErrorResponse(w, r, http.StatusNotFound, message)
+}
+
 func BadRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	ErrorResponse(w, r, http.StatusUnprocessableEntity, err.Error())
 }
