@@ -141,3 +141,19 @@ func TestGetMovieHandler_ReturnMovieByID(t *testing.T) {
 	}
 
 }
+
+func TestDeleteMovieHandler_ReturnNothing(t *testing.T) {
+	t.Parallel()
+
+	id := int64(5)
+	db, _ := helper.NewSQLMock(t, func(mock sqlmock.Sqlmock) {
+		mock.ExpectExec("DELETE FROM movies WHERE id").WithArgs(id).WillReturnResult(sqlmock.NewResult(0, id))
+	})
+
+	m := database.NewModels(db)
+	err := m.Movies.Delete(id)
+	if err != nil {
+		t.Fatalf("Can't delete movie id: %d, Err: %v", id, err)
+	}
+
+}
