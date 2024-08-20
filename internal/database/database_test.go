@@ -139,3 +139,25 @@ func TestMovieGet_GetMovie(t *testing.T) {
 		t.Errorf("want version %d got %d", want.Version, got.Version)
 	}
 }
+
+func TestMovieDelete_DeleteMovie(t *testing.T) {
+	t.Parallel()
+
+	id := int64(2)
+	db, mock := helper.NewSQLMock(t, func(mock sqlmock.Sqlmock) {
+		query := `DELETE FROM movies WHERE id `
+		mock.ExpectExec(query).WithArgs(id).WillReturnResult(sqlmock.NewResult(0, id))
+	})
+
+	m := database.NewModels(db)
+
+	err := m.Movies.Delete(id)
+	if err != nil {
+		t.Fatalf("Can't delete movie id: %d, Err: %v", id, err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal("query not as expected", err)
+	}
+
+}
