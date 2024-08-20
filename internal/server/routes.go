@@ -102,3 +102,28 @@ func (s *Server) GetMovieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+func (s *Server) DeleteMovieHandler(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+	id, err := strconv.ParseInt(idString, 10, 32)
+	if err != nil {
+		helper.NotFoundResponse(w, r, err)
+		return
+	}
+
+	err = s.db.Movies.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, database.ErrRecordNotFound):
+			helper.NotFoundResponse(w, r, err)
+		default:
+			helper.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = helper.WriteJSON(w, http.StatusOK, helper.Envelope{"message": "movie successfully deleted"}, nil)
+	if err != nil {
+		helper.ServerErrorResponse(w, r, err)
+	}
+}
