@@ -161,3 +161,46 @@ func TestMovieDelete_DeleteMovie(t *testing.T) {
 	}
 
 }
+
+func TestMovieUpdate_UpdateMovie(t *testing.T) {
+	t.Parallel()
+
+	want := data.Movie{
+		ID:        3,
+		Title:     "overlord",
+		Year:      2024,
+		Runtime:   135,
+		Genres:    []string{"Action", "Adventure"},
+		CreatedAt: time.Now(),
+		Version:   3,
+	}
+
+	db, mock := helper.NewSQLMock(t, func(mock sqlmock.Sqlmock) {
+		query := `
+		UPDATE movies
+		SET (.+) 
+		RETURNING version
+		`
+		// query := "UPDATE movies"
+		rows := sqlmock.NewRows([]string{"version"}).AddRow(want.Version)
+		mock.ExpectQuery(query).WithArgs(
+			want.Title,
+			want.Year,
+			want.Runtime,
+			pq.Array(want.Genres),
+			want.ID,
+			want.Version,
+		).WillReturnRows(rows)
+	})
+
+	m := database.NewModels(db)
+
+	err := m.Movies.Update(&want)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error("unfulfilled query")
+	}
+}
