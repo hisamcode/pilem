@@ -96,3 +96,36 @@ func (m MovieModel) Delete(id int64) error {
 
 	return nil
 }
+
+func (m MovieModel) Update(movie *data.Movie) error {
+	query := `
+		UPDATE movies 
+		SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
+		WHERE id = $5 AND version = $6
+		RETURNING version
+		`
+
+	args := []any{
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		pq.Array(movie.Genres),
+		movie.ID,
+		movie.Version,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&movie.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
