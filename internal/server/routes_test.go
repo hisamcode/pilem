@@ -7,6 +7,7 @@ import (
 	"pilem/helper"
 	"pilem/internal/data"
 	"pilem/internal/database"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -154,6 +155,62 @@ func TestDeleteMovieHandler_ReturnNothing(t *testing.T) {
 	err := m.Movies.Delete(id)
 	if err != nil {
 		t.Fatalf("Can't delete movie id: %d, Err: %v", id, err)
+	}
+
+}
+
+func TestUpdateMovieHandler_ReturnMovie(t *testing.T) {
+	t.Parallel()
+
+	want := data.Movie{
+		ID:      2,
+		Title:   "overlord update",
+		Year:    2024,
+		Runtime: 135,
+		Genres:  []string{"Adventure", "Fantasy"},
+		Version: 2,
+	}
+
+	db, _ := helper.NewSQLMock(t, func(mock sqlmock.Sqlmock) {
+		queryUpdate := `
+		UPDATE movies
+		SET (.+) 
+		RETURNING version
+		`
+		mock.ExpectQuery("").WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "title", "year", "runtime", "genres", "version"}).AddRow(want.ID, want.CreatedAt, want.Title, want.Year, want.Runtime, pq.Array(want.Genres), want.Version))
+		rows := sqlmock.NewRows([]string{"version"}).AddRow(want.Version)
+		mock.ExpectQuery(queryUpdate).WithArgs(want.Title, want.Year, want.Runtime, pq.Array(want.Genres), want.ID, want.Version).
+			WillReturnRows(rows)
+	})
+
+	m := database.NewModels(db)
+	s := Server{db: m}
+
+	setupJson, err := helper.AnyToJSON(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := httptest.NewRequest(http.MethodPut, "/movie/2", strings.NewReader(setupJson))
+	r.SetPathValue("id", strconv.FormatInt(want.ID, 10))
+	w := httptest.NewRecorder()
+
+	s.UpdateMovieHandler(w, r)
+
+	gotByte, err := io.ReadAll(w.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantStr, err := helper.AnyToJSON(helper.Envelope{"movie": want})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if wantStr != string(gotByte) {
+		t.Log("want", wantStr)
+		t.Log("got", string(gotByte))
+		t.Error(cmp.Diff(wantStr, string(gotByte)))
 	}
 
 }

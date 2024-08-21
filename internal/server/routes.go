@@ -127,3 +127,65 @@ func (s *Server) DeleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 		helper.ServerErrorResponse(w, r, err)
 	}
 }
+
+func (s *Server) UpdateMovieHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := helper.ReadIDParam(r)
+	if err != nil {
+		helper.NotFoundResponse(w, r, err)
+		return
+	}
+
+	movie, err := s.db.Movies.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, database.ErrRecordNotFound):
+			helper.NotFoundResponse(w, r, err)
+		default:
+			helper.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// for partial update
+	var input struct {
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
+	}
+
+	err = helper.ReadJSON(w, r, &input)
+	if err != nil {
+		helper.BadRequestResponse(w, r, err)
+		return
+	}
+
+	if input.Title != nil {
+		movie.Title = *input.Title
+	}
+	if input.Year != nil {
+		movie.Year = *input.Year
+	}
+	if input.Runtime != nil {
+		movie.Runtime = *input.Runtime
+	}
+	if input.Genres != nil {
+		movie.Genres = input.Genres
+	}
+
+	err = s.db.Movies.Update(movie)
+	if err != nil {
+		switch {
+		case errors.Is(err, database.ErrEditConflict):
+			helper.EditConflictResponse(w, r, err)
+		default:
+			helper.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = helper.WriteJSON(w, http.StatusOK, helper.Envelope{"movie": movie}, nil)
+	if err != nil {
+		helper.ServerErrorResponse(w, r, err)
+	}
+}

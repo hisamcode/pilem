@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -34,7 +35,7 @@ func WriteJSON(w http.ResponseWriter, status int, data Envelope, headers http.He
 	return nil
 }
 
-// AnyToJSON Create From envelope to json string
+// AnyToJSON Create to json string
 // Usually this helper for testing
 func AnyToJSON(data any) (string, error) {
 	js, err := json.Marshal(data)
@@ -116,6 +117,18 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	return nil
 }
 
+func ReadIDParam(r *http.Request) (int64, error) {
+	idStr := r.PathValue("id")
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid id parameter")
+	}
+
+	return id, nil
+
+}
+
 func ErrorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 	env := Envelope{"error": message}
 	err := WriteJSON(w, status, env, nil)
@@ -136,6 +149,11 @@ func NotFoundResponse(w http.ResponseWriter, r *http.Request, err error) {
 
 func BadRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	ErrorResponse(w, r, http.StatusUnprocessableEntity, err.Error())
+}
+
+func EditConflictResponse(w http.ResponseWriter, r *http.Request, err error) {
+	message := "unable to update the record due to an edit conflict, please try again"
+	ErrorResponse(w, r, http.StatusUnprocessableEntity, message)
 }
 
 // NewSQLMock helper for stub sql
