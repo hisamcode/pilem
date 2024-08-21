@@ -34,7 +34,7 @@ func WriteJSON(w http.ResponseWriter, status int, data Envelope, headers http.He
 	return nil
 }
 
-// AnyToJSON Create From envelope to json string
+// AnyToJSON Create to json string
 // Usually this helper for testing
 func AnyToJSON(data any) (string, error) {
 	js, err := json.Marshal(data)
